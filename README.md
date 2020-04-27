@@ -39,3 +39,4 @@ I make notes in the code which can be found by "**TODO**" or "**TODO-CHECKME**" 
 
 Notes:
 * [recon.py](https://github.com/slinkinone/recon_knife/blob/master/scripts/recon.py) requires [python3](https://www.python.org/download/releases/3.0/);
+* AWS CREDENTIIALS are required for [recon.py](https://github.com/slinkinone/recon_knife/blob/master/scripts/recon.py);

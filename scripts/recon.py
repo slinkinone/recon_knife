@@ -320,7 +320,6 @@ def main():
     # TODO: excaption handling
     os.mkdir(cfg.general["domain_recon_path"])
     os.chdir(cfg.general["domain_recon_path"])
-    #print(cfg)
     sublist3r()
     certspotter()
     nsrecords()
