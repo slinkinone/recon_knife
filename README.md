@@ -35,4 +35,7 @@ I make notes in the code which can be found by "**TODO**" or "**TODO-CHECKME**" 
 * Check [recon.py](https://github.com/slinkinone/recon_knife/blob/master/scripts/recon.py) for mistakes (compare with the original script);
 * Screenshots support;
 * Fix **TODO** and **TODO-CHECKME** in the code;
-* Django template
+* Django template;
+
+Notes:
+* [recon.py](https://github.com/slinkinone/recon_knife/blob/master/scripts/recon.py) requires [python3](https://www.python.org/download/releases/3.0/);

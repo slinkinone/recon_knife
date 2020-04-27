@@ -2,8 +2,11 @@
 
 from termcolor import colored
 
+def print_info_message(text):
+	print(colored("Debug:", "red"), colored(text, "blue"))
+
 def print_container(title, container):
-	print(colored(title, "red"))
+	print(colored(title, "yellow"))
 
 	if len(container) != 0:
 		for line in container:
@@ -13,7 +16,7 @@ def print_container(title, container):
 	return
 
 def print_text(title, text):
-	print(colored(title, "red"))
+	print(colored(title, "yellow"))
 
 	if len(text) != 0:
 		print(colored(text, "green"))

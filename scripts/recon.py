@@ -24,6 +24,7 @@ wayback_js_result = set()
 wayback_php_result = set()
 wayback_aspx_result = set()
 wayback_jspurls_result = set()
+hostalive_result = set()
 
 
 def get_array_from_file(filename):
@@ -41,15 +42,17 @@ def save_list_to_file(filename, container):
 
 # TODO: reimplement sublist3r as module which returns array
 def sublist3r():
-	os.system("{} -d {} -t {} -o {} > /dev/null"\
-		.format(cfg.sublist3r["run_path"],
-			cfg.input_data["domain"],
-			cfg.sublist3r["thread_count"],
-			cfg.sublist3r["out_filename"]))
+    report.print_info_message("sublist3r")
+    os.system("{} -d {} -t {} -o {} > /dev/null"\
+        .format(cfg.sublist3r["run_path"],
+            cfg.input_data["domain"],
+            cfg.sublist3r["thread_count"],
+            cfg.sublist3r["out_filename"]))
 
-	return get_array_from_file(cfg.sublist3r["out_filename"])
+    return get_array_from_file(cfg.sublist3r["out_filename"])
 
 def certspotter():
+    report.print_info_message("certspotter")
     result = set()
     response = requests.get(cfg.certspotter["format_url"]
         .format(cfg.input_data["domain"]))
@@ -69,7 +72,7 @@ def certspotter():
 # TODO: remake ct to module which return an array
 def nsrecords():
     # crtsh -> massdns
-    print("DEBUG: massdns for crtsh result")
+    report.print_info_message("massdns for crtsh result")
     os.system("{}/{} {} | {} -r {} -t A -q -o S -w {}"\
         .format(cfg.massdns["scripts_path"],
             cfg.massdns["crtsh_script_name"],
@@ -79,7 +82,7 @@ def nsrecords():
             cfg.massdns["crtsh_out_file"]))
     
     # sublist3r -> massdns
-    print("DEBUG: massdns for sublist3r result")
+    report.print_info_message("massdns for sublist3r result")
     os.system("cat {} | {} -r {} -t A -q -o S -w {}"\
         .format(cfg.sublist3r["out_filename"],
             cfg.massdns["run_path"],
@@ -87,7 +90,7 @@ def nsrecords():
             cfg.massdns["sublist3r_out_file"]))
 
     # certspotter -> massdns
-    print("DEBUG: massdns for certspotter result")
+    report.print_info_message("massdns for certspotter result")
     os.system("cat {} | {} -r {} -t A -q -o S -w {}"\
         .format(cfg.certspotter["out_filename"],
             cfg.massdns["run_path"],
@@ -95,7 +98,7 @@ def nsrecords():
             cfg.massdns["certspotter_out_file"]))
 
     # subbrute -> massdns
-    print("DEBUG: massdns for subbrute result")
+    report.print_info_message("massdns for subbrute result")
     os.system("{}/{} {} {} | {} -r {} -t A -q -o S | grep -v {} > {}"\
         .format(cfg.massdns["scripts_path"],
             cfg.massdns["subbrute_script_name"],
@@ -107,7 +110,7 @@ def nsrecords():
             cfg.massdns["subbrute_out_file"]))
 
     # dsn-resp: name, type, data
-    print("DEBUG: Concat DNS responses")
+    report.print_info_message("Collct DNS responses")
     dns_resp_container = get_array_from_file(cfg.massdns["crtsh_out_file"]) \
         + get_array_from_file(cfg.massdns["sublist3r_out_file"]) \
         + get_array_from_file(cfg.massdns["certspotter_out_file"]) \
@@ -124,7 +127,7 @@ def nsrecords():
     all_domains = set(get_array_from_file(cfg.sublist3r["out_filename"])\
         + get_array_from_file(cfg.certspotter["out_filename"]))
 
-    print("DEBUG: Process dns unique values, CNAMEs, NXDOMAINs")
+    report.print_info_message("Process dns unique values, CNAMEs, NXDOMAINs")
     for dns_data in dns_data_set:
         for dns_resp in dns_resp_container:
             if dns_resp.find(dns_data) != -1:
@@ -162,25 +165,30 @@ def exclude_domains():
 ''' TODO-CHECKME: urllist.txt is filtered? if there are http and http
 save only http url, if there is only http or https - asve this one.'''
 def hostalive():
-    print("DEBUG: hostalive")
+    report.print_info_message("hostalive")
+    global hostalive_result
+
     responsive = check_output(["cat {} | httprobe -c 50 -t 3000"\
-        .format(cfg.general["all_domain_filename"])], shell=True).decode("utf-8")
+        .format(cfg.general["all_domain_filename"])], shell=True)\
+        .decode("utf-8").split('\n')
 
     result = []
     http_result = set()
     https_result = set()
 
-    for resp in responsive.split('\n'):
+    for resp in responsive:
         if resp.find("http://") != -1:
             http_result.add(resp.replace("http://", ""))
         elif resp.find("https://") != -1:
             https_result.add(resp.replace("https://", ""))
 
     https_result = https_result - http_result # sort to unique https urls
+
+    hostalive_result = http_result | https_result
     result = [ "http://" + url for url in http_result]\
         + [ "https://" + url for url in https_result]
 
-    print("DEBUG: Total of {} live subdomains were found".format(len(result)))
+    report.print_info_message("Total of {} live subdomains were found".format(len(result)))
 
     save_list_to_file(cfg.hostalive["out_filename"], result)
     return result
@@ -194,8 +202,7 @@ def cleanup():
     return
 
 def aqua():
-    print("DEBUG: aqua")
-
+    report.print_info_message("aqua")
     os.mkdir(cfg.aqua["out_folder_name"])
     #os.mkdir(cfg.aqua["out_folder_name"] + "/parsedjson")  
 
@@ -209,8 +216,7 @@ def aqua():
 # TODO: remove working with tmp files; store info to array and pass it to app
 # TODO: replace grep-s to python functions
 def waybackrecon():
-    print("DEBUG: waybackrecon")
-
+    report.print_info_message("waybackrecon")
     os.mkdir(cfg.waybackurls["out_folder_name"])
 
     os.system("cat {} | waybackurls > {}/{}"\
@@ -250,7 +256,7 @@ def waybackrecon():
     return
 
 def dirsearcher():
-    print("DEBUG: aqua")
+    report.print_info_message("hostalive")
     os.system("cat {} | xargs -P {} -I % sh -c \"python3 {} -e php,asp,aspx,jsp,html,zip,jar -w {}\
         -t {} -u % | grep Target && tput sgr0\""\
         .format(cfg.hostalive["out_filename"],
@@ -258,9 +264,6 @@ def dirsearcher():
             cfg.dirsearcher["run_path"],
             cfg.dirsearcher["dirsearch_wordlist"],
             cfg.dirsearcher["dirsearch_threads"]))
-
-    # TODO-CHECKME: Output of the above script should be passed to report master
-    # && ./lazyrecon.sh -r $domain -r $foldername -r %
     return
 
 
@@ -275,6 +278,10 @@ def discovery():
 
 
 def generate_report():
+    report.print_container("Total scanned subdomains", hostalive_result)
+
+    report.print_text("aqua report path: ", os.getcwd() + "/" + cfg.aqua["out_folder_name"])
+
     # possible ns takeovers
     report.print_container("Possible NS Takeovers", possible_ns_takeover)
 
