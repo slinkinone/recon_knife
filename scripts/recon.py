@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-import os, argparse, requests, json
+import os, argparse, requests, json, urllib.parse
 from datetime import datetime
 from subprocess import check_output
 
 import config as cfg
+import report
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-d", "--domain", required = True, help = "Target domain")
@@ -17,6 +18,12 @@ dns_data_set = set()
 filtered_dns_resp_container = []
 cname_dns_resp_container = set()
 possible_ns_takeover = []
+
+wayback_params_result = set()
+wayback_js_result = set()
+wayback_php_result = set()
+wayback_aspx_result = set()
+wayback_jspurls_result = set()
 
 
 def get_array_from_file(filename):
@@ -61,7 +68,6 @@ def certspotter():
 
 # TODO: remake ct to module which return an array
 def nsrecords():
-
     # crtsh -> massdns
     print("DEBUG: massdns for crtsh result")
     os.system("{}/{} {} | {} -r {} -t A -q -o S -w {}"\
@@ -201,7 +207,7 @@ def aqua():
     return
 
 # TODO: remove working with tmp files; store info to array and pass it to app
-# TODO: remove grep-s to python functions
+# TODO: replace grep-s to python functions
 def waybackrecon():
     print("DEBUG: waybackrecon")
 
@@ -212,35 +218,35 @@ def waybackrecon():
             cfg.waybackurls["out_folder_name"],
             cfg.waybackurls["out_filename"]))
 
-    os.system("cat {}/{} | sort -u | unfurl --unique keys > {}/{}"\
-        .format(cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["out_filename"],
-            cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["params_filename"]))
+    global wayback_params_result, wayback_js_result, wayback_php_result
+    global wayback_aspx_result, wayback_jspurls_result
 
-    os.system("cat {}/{} | sort -u | grep -P \"\\w+\\.js(\\?|$)\" | sort -u > {}/{}"\
-        .format(cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["out_filename"],
-            cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["jsurls_filename"]))
 
-    os.system("cat {}/{} | sort -u | grep -P \"\\w+\\.php(\\?|$)\" | sort -u > {}/{}"\
-        .format(cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["out_filename"],
-            cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["phpurls_filename"]))
 
-    os.system("cat {}/{} | sort -u | grep -P \"\\w+\\.aspx(\\?|$)\" | sort -u > {}/{}"\
+    wayback_params_result = check_output(["cat {}/{} | sort -u | unfurl --unique keys"\
         .format(cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["out_filename"],
-            cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["aspxurls_filename"]))
+            cfg.waybackurls["out_filename"])
+        ], shell=True)
 
-    os.system("cat {}/{} | sort -u | grep -P \"\\w+\\.jsp(\\?|$)\" | sort -u > {}/{}"\
-        .format(cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["out_filename"],
-            cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["jspurls_filename"]))
+    wayback_params_result = wayback_params_result.split('\n')
+    wayback_list = get_array_from_file(cfg.waybackurls["out_folder_name"]
+        + "/" + cfg.waybackurls["out_filename"])
+
+    for url in wayback_list:
+        path = urllib.parse.urlparse(url).path
+        ext = os.path.splitext(path)[1]
+        if ext == ".js":
+            wayback_js_result.add(url)  # TODO-CHECKME: or add(path)
+        elif ext == ".php":
+            wayback_php_result.add(url)
+        elif ext == ".aspx":
+            wayback_aspx_result.add(url)
+        elif ext == ".jsp":
+            wayback_jspurls_result.add(url)
+
+    os.remove("{}/{}".format(
+        cfg.waybackurls["out_folder_name"],
+        cfg.waybackurls["out_filename"]))
     return
 
 def dirsearcher():
@@ -268,6 +274,34 @@ def discovery():
     return
 
 
+def generate_report():
+    # possible ns takeovers
+    report.print_container("Possible NS Takeovers", possible_ns_takeover)
+
+    # wayback
+    report.print_container("Params wordlist", wayback_params_result)
+    report.print_container("Javscript files", wayback_js_result)
+    report.print_container("PHP Urls", wayback_php_result)
+    report.print_container("ASP Urls", wayback_aspx_result)
+    report.print_container("JSP Urls", wayback_jspurls_result)
+
+    # dig and host
+    dig_result = check_output(["dig", cfg.input_data["domain"]]).decode("utf-8")
+    report.print_text("DIG INFO", dig_result)
+
+    host_result = check_output(["host", cfg.input_data["domain"]]).decode("utf-8")
+    report.print_text("HOST INFO", host_result)
+
+    # nmap
+    # TODO: report for subdomains
+    nmap_args = "-sV -T3 -Pn -p {} {} | grep -E 'open|filtered|closed'"\
+        .format(','.join(str(port) for port in ports), "hackerone.com")
+
+    nmap_res = subprocess.check_output(["nmap " + nmap_args], shell=True).decode("utf-8") 
+    report.print_text("NMAP INFO", nmap_res)
+
+    return
+
 def main():
     args = vars(argParser.parse_args())
     cfg.input_data["domain"] = args["domain"]
@@ -283,7 +317,9 @@ def main():
     sublist3r()
     certspotter()
     nsrecords()
+    discovery()
 
+    generate_report()
     return
 
 if __name__ == "__main__":
