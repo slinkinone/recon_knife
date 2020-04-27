@@ -64,7 +64,7 @@ waybackurls = {
 }
 
 dirsearcher = {
-	"run_path": general["tools_folder_path"] + "dirsearch/dirsearch.py",
+	"run_path": general["tools_folder_path"] + "/dirsearch/dirsearch.py",
 	"subdomain_threads": 10,
 	"dirsearch_threads": 10,
 	"dirsearch_wordlist": general["tools_folder_path"] + "db/dicc.txt",

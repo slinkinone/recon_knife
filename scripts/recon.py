@@ -135,12 +135,12 @@ def nsrecords():
                     cname_dns_resp_container.add(dns_resp)
 
                     cname = dns_resp.split()[0]
-                    host_dns_lookup = check_output(["host", cname])
+                    host_dns_lookup = check_output(["host", cname]).decode("utf-8")
                     if host_dns_lookup.find("NXDOMAIN") != -1:
                         possible_ns_takeover.append(dns_resp)
                 break
 
-    save_list_to_file(cfg.general["all_domain_filename"])
+    save_list_to_file(cfg.general["all_domain_filename"], all_domains)
 
     #print("DEBUG: Print containers")
     #print("sublist3r = ", get_array_from_file(cfg.sublist3r["out_filename"]), "\n")
@@ -164,13 +164,13 @@ save only http url, if there is only http or https - asve this one.'''
 def hostalive():
     print("DEBUG: hostalive")
     responsive = check_output(["cat {} | httprobe -c 50 -t 3000"\
-        .format(cfg.general["all_domain_filename"])])
+        .format(cfg.general["all_domain_filename"])], shell=True).decode("utf-8")
 
     result = []
     http_result = set()
     https_result = set()
 
-    for resp in responsive:
+    for resp in responsive.split('\n'):
         if resp.find("http://") != -1:
             http_result.add(resp.replace("http://", ""))
         elif resp.find("https://") != -1:
@@ -182,7 +182,7 @@ def hostalive():
 
     print("DEBUG: Total of {} live subdomains were found".format(len(result)))
 
-    save_list_to_file(cfg.hostalive["out_filename"])
+    save_list_to_file(cfg.hostalive["out_filename"], result)
     return result
 
 # stub
@@ -226,7 +226,7 @@ def waybackrecon():
     wayback_params_result = check_output(["cat {}/{} | sort -u | unfurl --unique keys"\
         .format(cfg.waybackurls["out_folder_name"],
             cfg.waybackurls["out_filename"])
-        ], shell=True)
+        ], shell=True).decode("utf-8")
 
     wayback_params_result = wayback_params_result.split('\n')
     wayback_list = get_array_from_file(cfg.waybackurls["out_folder_name"]
@@ -295,9 +295,9 @@ def generate_report():
     # nmap
     # TODO: report for subdomains
     nmap_args = "-sV -T3 -Pn -p {} {} | grep -E 'open|filtered|closed'"\
-        .format(','.join(str(port) for port in ports), "hackerone.com")
+        .format(','.join(str(port) for port in cfg.nmap["ports"]), cfg.input_data["domain"])
 
-    nmap_res = subprocess.check_output(["nmap " + nmap_args], shell=True).decode("utf-8") 
+    nmap_res = check_output(["nmap " + nmap_args], shell=True).decode("utf-8") 
     report.print_text("NMAP INFO", nmap_res)
 
     return

@@ -8,8 +8,8 @@ def print_container(title, container):
 	if len(container) != 0:
 		for line in container:
 			print(colored(line, "green"))
-		else:
-			print(colored("No items", "green"))
+	else:
+		print(colored("No items", "green"))
 	return
 
 def print_text(title, text):
@@ -18,5 +18,5 @@ def print_text(title, text):
 	if len(text) != 0:
 		print(colored(text, "green"))
 	else:
-			print(colored("No items", "green"))
+		print(colored("No items", "green"))
 	return

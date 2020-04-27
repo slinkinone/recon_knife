@@ -77,9 +77,9 @@ RUN go get github.com/michenriksen/aquatone
 #RUN systemctl status snapd
 #RUN snap install chromium
 
-RUN echo "Installing JSParser"
-RUN git clone https://github.com/nahamsec/JSParser.git
-RUN cd JSParser* && pip2 install 'soupsieve==1.9.5' && python setup.py install
+#RUN echo "Installing JSParser"
+#RUN git clone https://github.com/nahamsec/JSParser.git
+#RUN cd JSParser* && pip2 install 'soupsieve==1.9.5' && python setup.py install
 
 RUN echo "Installing Sublist3r"
 RUN git clone https://github.com/aboul3la/Sublist3r.git
@@ -131,6 +131,17 @@ RUN echo "Downloading Seclists"
 RUN git clone https://github.com/danielmiessler/SecLists.git
 # THIS FILE BREAKS MASSDNS AND NEEDS TO BE CLEANED
 RUN cd SecLists/Discovery/DNS/ && cat dns-Jhaddix.txt | head -n -14 > clean-jhaddix-dns.txt
+
+RUN echo "Installing JSParser"
+RUN git clone https://github.com/nahamsec/JSParser.git
+RUN cd JSParser* && pip2 install 'soupsieve==1.9.5'\
+	&& sed -i "s/tornado/tornado==5.1.1/g" setup.py \
+	&& python setup.py install
+
+# dependencies for the final script
+RUN pip3 install setuptools
+RUN pip3 install wheel
+RUN pip3 install termcolor
 
 #RUN echo "Installing lazyrecon"
 #RUN git clone https://github.com/nahamsec/lazyrecon.git
