@@ -30,3 +30,9 @@ docker kill container_id
 Now, I'm working on moving [lazyrecon](https://github.com/nahamsec/lazyrecon "lazyrecon") bash script functionality script to python script. It will get more structured version of lazyrecon script with fixed mistakes.
 
 I make notes in the code which can be found by "**TODO**" or "**TODO-CHECKME**" in places that require optimization (usually avoid unsing temporary files) and things from origianl code which I haven't completely understood.
+
+### TODO
+* Check [recon.py](https://github.com/slinkinone/recon_knife/blob/master/scripts/recon.py) for mistakes (compare with the original script);
+* Screenshots support;
+* Fix **TODO** and **TODO-CHECKME** in the code;
+* Django template
