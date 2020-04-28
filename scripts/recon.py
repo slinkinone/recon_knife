@@ -2,7 +2,7 @@
 
 import os, argparse, requests, json, urllib.parse
 from datetime import datetime
-from subprocess import check_output
+import subprocess
 
 import config as cfg
 import report
@@ -25,6 +25,22 @@ wayback_php_result = set()
 wayback_aspx_result = set()
 wayback_jspurls_result = set()
 hostalive_result = set()
+
+def execute_shell(cmd):
+    result = ""
+
+    for k in range(cfg.general["cmd_attempt_counter"]):
+        report.print_info_message("Attempt {} to run {}"\
+            .format(k, cmd))
+        try:
+            result = subprocess.check_output([cmd], shell=True).decode("utf-8")
+            return result
+        except subprocess.CalledProcessError as e:
+            report.print_error_message(e.output)
+            continue
+        break
+
+    return result
 
 
 def get_array_from_file(filename):
@@ -138,9 +154,13 @@ def nsrecords():
                     cname_dns_resp_container.add(dns_resp)
 
                     cname = dns_resp.split()[0]
-                    host_dns_lookup = check_output(["host", cname]).decode("utf-8")
-                    if host_dns_lookup.find("NXDOMAIN") != -1:
-                        possible_ns_takeover.append(dns_resp)
+                    try:
+                        host_dns_lookup = execute_shell("host " + cname)
+                        if host_dns_lookup.find("NXDOMAIN") != -1:
+                            possible_ns_takeover.append(dns_resp)
+                    except subprocess.CalledProcessError as e:
+                        report.print_error_message(e.output)
+
                 break
 
     save_list_to_file(cfg.general["all_domain_filename"], all_domains)
@@ -168,9 +188,8 @@ def hostalive():
     report.print_info_message("hostalive")
     global hostalive_result
 
-    responsive = check_output(["cat {} | httprobe -c 50 -t 3000"\
-        .format(cfg.general["all_domain_filename"])], shell=True)\
-        .decode("utf-8").split('\n')
+    responsive = execute_shell("cat {} | httprobe -c 50 -t 3000"\
+        .format(cfg.general["all_domain_filename"])).split('\n')
 
     result = []
     http_result = set()
@@ -227,12 +246,9 @@ def waybackrecon():
     global wayback_params_result, wayback_js_result, wayback_php_result
     global wayback_aspx_result, wayback_jspurls_result
 
-
-
-    wayback_params_result = check_output(["cat {}/{} | sort -u | unfurl --unique keys"\
+    wayback_params_result = execute_shell("cat {}/{} | sort -u | unfurl --unique keys"\
         .format(cfg.waybackurls["out_folder_name"],
-            cfg.waybackurls["out_filename"])
-        ], shell=True).decode("utf-8")
+            cfg.waybackurls["out_filename"]))
 
     wayback_params_result = wayback_params_result.split('\n')
     wayback_list = get_array_from_file(cfg.waybackurls["out_folder_name"]
@@ -293,10 +309,10 @@ def generate_report():
     report.print_container("JSP Urls", wayback_jspurls_result)
 
     # dig and host
-    dig_result = check_output(["dig", cfg.input_data["domain"]]).decode("utf-8")
+    dig_result = execute_shell("dig " + cfg.input_data["domain"])
     report.print_text("DIG INFO", dig_result)
 
-    host_result = check_output(["host", cfg.input_data["domain"]]).decode("utf-8")
+    host_result = execute_shell(["host " + cfg.input_data["domain"]])
     report.print_text("HOST INFO", host_result)
 
     # nmap
@@ -304,7 +320,7 @@ def generate_report():
     nmap_args = "-sV -T3 -Pn -p {} {} | grep -E 'open|filtered|closed'"\
         .format(','.join(str(port) for port in cfg.nmap["ports"]), cfg.input_data["domain"])
 
-    nmap_res = check_output(["nmap " + nmap_args], shell=True).decode("utf-8") 
+    nmap_res = execute_shell("nmap " + nmap_args)
     report.print_text("NMAP INFO", nmap_res)
 
     return

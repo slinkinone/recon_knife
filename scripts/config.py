@@ -4,6 +4,7 @@ general = {
 	"tools_folder_path": "~/tools",
 	"all_domain_filename": "all_domain.txt",
 	"domain_recon_path": "",
+	"cmd_attempt_counter":	3,
 }
 
 input_data = {

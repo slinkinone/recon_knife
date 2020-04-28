@@ -5,6 +5,9 @@ from termcolor import colored
 def print_info_message(text):
 	print(colored("Debug:", "red"), colored(text, "blue"))
 
+def print_error_message(text):
+	print(colored("Debug:", "red"), colored(text, "red"))
+
 def print_container(title, container):
 	print(colored(title, "yellow"))
 
