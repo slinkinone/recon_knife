@@ -312,7 +312,7 @@ def generate_report():
     dig_result = execute_shell("dig " + cfg.input_data["domain"])
     report.print_text("DIG INFO", dig_result)
 
-    host_result = execute_shell(["host " + cfg.input_data["domain"]])
+    host_result = execute_shell("host " + cfg.input_data["domain"])
     report.print_text("HOST INFO", host_result)
 
     # nmap
